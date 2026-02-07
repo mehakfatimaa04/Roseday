@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Happy Rose Day 🌹</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at top, #ffe6ee, #ffd1dc);
+      font-family: "Poppins", Arial, sans-serif;
+    }
+
+    canvas {
+      background: white;
+      border-radius: 26px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+      border: 3px solid rgba(255, 65, 120, 0.55);
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="c" width="650" height="750"></canvas>
+
+<script>
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+
+  const W = canvas.width;
+  const H = canvas.height;
+
+  const centerX = W / 2;
+  const roseY = 270;
+
+  // ---------------------------------------
+  // Helpers
+  // ---------------------------------------
+  function clearCanvas() {
+    ctx.clearRect(0, 0, W, H);
+
+    // background hearts (static)
+    softHeart(120, 140, 18, 0.10);
+    softHeart(530, 160, 22, 0.10);
+    softHeart(520, 520, 18, 0.08);
+    softHeart(140, 520, 22, 0.08);
+  }
+
+  function softHeart(x, y, size, opacity) {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = "#ff7aa8";
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.bezierCurveTo(x - size, y - size, x - size * 1.4, y + size * 0.6, x, y + size * 1.4);
+    ctx.bezierCurveTo(x + size * 1.4, y + size * 0.6, x + size, y - size, x, y);
+    ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // draw a petal with progress (0 → 1)
+  function drawPetalProgress(cx, cy, w, h, rotation, fill1, fill2, alpha, progress) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+
+    const grad = ctx.createRadialGradient(-w * 0.15, -h * 0.2, 5, 0, 0, Math.max(w, h));
+    grad.addColorStop(0, fill2);
+    grad.addColorStop(1, fill1);
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = grad;
+
+    // Petal path
+    ctx.beginPath();
+    ctx.moveTo(0, -h * 0.55);
+
+    ctx.bezierCurveTo(
+      -w * 0.9, -h * 0.65,
+      -w * 0.95,  h * 0.25,
+       0,          h * 0.55
+    );
+
+    ctx.bezierCurveTo(
+       w * 0.95,  h * 0.25,
+       w * 0.9,  -h * 0.65,
+       0,        -h * 0.55
+    );
+
+    ctx.closePath();
+
+    // Clip by progress (so it draws gradually)
+    const clipW = w * 2.2;
+    const clipH = h * 2.2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-clipW / 2, -clipH / 2, clipW * progress, clipH);
+    ctx.clip();
+    ctx.fill();
+    ctx.restore();
+
+    // highlight also progress
+    ctx.globalAlpha = 0.12 * progress;
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.ellipse(-w * 0.18, -h * 0.2, w * 0.22, h * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // draw leaf with progress
+  function drawLeafProgress(cx, cy, w, h, rotation, col1, col2, progress) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+
+    const grad = ctx.createLinearGradient(-w, -h, w, h);
+    grad.addColorStop(0, col2);
+    grad.addColorStop(1, col1);
+
+    ctx.fillStyle = grad;
+
+    // Leaf path
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+
+    ctx.bezierCurveTo(
+      -w * 1.1, -h * 0.2,
+      -w * 0.9, -h * 1.0,
+       0,       -h * 1.2
+    );
+
+    ctx.bezierCurveTo(
+       w * 0.9, -h * 1.0,
+       w * 1.1, -h * 0.2,
+       0,        0
+    );
+
+    ctx.closePath();
+
+    // clip leaf fill by progress
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-w * 1.2, -h * 1.3, (w * 2.4) * progress, h * 1.6);
+    ctx.clip();
+    ctx.fill();
+    ctx.restore();
+
+    // vein
+    ctx.globalAlpha = 0.35 * progress;
+    ctx.strokeStyle = "rgba(255,255,255,0.75)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -h * 1.1);
+    ctx.stroke();
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // draw stem with progress
+  function drawStemProgress(progress) {
+    const stemGrad = ctx.createLinearGradient(centerX, 330, centerX, 610);
+    stemGrad.addColorStop(0, "#1f8a3a");
+    stemGrad.addColorStop(1, "#0f4f1f");
+
+    ctx.lineCap = "round";
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = stemGrad;
+
+    const startY = 330;
+    const endY = 610;
+
+    const currentY = startY + (endY - startY) * progress;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, startY);
+    ctx.quadraticCurveTo(centerX + 10, 470, centerX - 6, currentY);
+    ctx.stroke();
+  }
+
+  // draw text with fade
+  function drawText(progress) {
+    ctx.save();
+    ctx.globalAlpha = progress;
+
+    ctx.font = "700 40px Poppins, Arial";
+    ctx.fillStyle = "#ff2d5a";
+    ctx.textAlign = "center";
+    ctx.fillText("Happy Rose Day Cutie 🌹", centerX, 705);
+
+    ctx.font = "500 18px Poppins, Arial";
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillText("A little rose, just for you 💗", centerX, 735);
+
+    ctx.restore();
+  }
+
+  // ---------------------------------------
+  // Animation timeline
+  // ---------------------------------------
+  let start = null;
+
+  function animate(t) {
+    if (!start) start = t;
+    const elapsed = (t - start) / 1000; // seconds
+
+    clearCanvas();
+
+    // timings
+    const petalsTime = 2.2;
+    const stemTime = 1.0;
+    const leavesTime = 1.0;
+    const textTime = 0.7;
+
+    // Progress sections
+    const pPetals = Math.min(1, elapsed / petalsTime);
+    const pStem = Math.min(1, Math.max(0, (elapsed - petalsTime) / stemTime));
+    const pLeaves = Math.min(1, Math.max(0, (elapsed - petalsTime - stemTime) / leavesTime));
+    const pText = Math.min(1, Math.max(0, (elapsed - petalsTime - stemTime - leavesTime) / textTime));
+
+    // ----------------------------
+    // Petals (draw gradually)
+    // ----------------------------
+    drawPetalProgress(centerX, roseY + 40, 190, 170, 0.00, "#ff2d5a", "#ff7aa2", 0.95, pPetals);
+    drawPetalProgress(centerX - 70, roseY + 20, 150, 140, -0.40, "#ff2d5a", "#ff6d96", 0.92, pPetals);
+    drawPetalProgress(centerX + 70, roseY + 20, 150, 140, 0.40, "#ff2d5a", "#ff6d96", 0.92, pPetals);
+
+    drawPetalProgress(centerX - 35, roseY - 5, 120, 115, -0.25, "#e8003f", "#ff5f8a", 0.96, pPetals);
+    drawPetalProgress(centerX + 35, roseY - 5, 120, 115, 0.25, "#e8003f", "#ff5f8a", 0.96, pPetals);
+    drawPetalProgress(centerX, roseY - 15, 130, 125, 0.00, "#d8003a", "#ff4f7f", 0.97, pPetals);
+
+    drawPetalProgress(centerX, roseY - 35, 90, 90, 0.10, "#b6002d", "#ff4a77", 0.98, pPetals);
+    drawPetalProgress(centerX, roseY - 55, 65, 65, -0.15, "#8d0022", "#ff3b6c", 0.98, pPetals);
+
+    // Center core appears smoothly
+    if (pPetals > 0.55) {
+      ctx.save();
+      ctx.translate(centerX, roseY - 65);
+      ctx.rotate(-0.2);
+
+      const coreGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 70);
+      coreGrad.addColorStop(0, "#5a0014");
+      coreGrad.addColorStop(1, "#c70034");
+
+      ctx.globalAlpha = (pPetals - 0.55) / 0.45;
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 35, 28, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha *= 0.25;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.ellipse(-12, -8, 14, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    // ----------------------------
+    // Stem
+    // ----------------------------
+    if (pStem > 0) drawStemProgress(pStem);
+
+    // ----------------------------
+    // Leaves
+    // ----------------------------
+    if (pLeaves > 0) {
+      drawLeafProgress(centerX - 95, 470, 90, 65, -0.45, "#1ea94b", "#0b6b2c", pLeaves);
+      drawLeafProgress(centerX + 110, 500, 95, 70, 0.55, "#1ea94b", "#0b6b2c", pLeaves);
+    }
+
+    // ----------------------------
+    // Text
+    // ----------------------------
+    if (pText > 0) drawText(pText);
+
+    // continue animation until all done
+    if (elapsed < petalsTime + stemTime + leavesTime + textTime + 0.2) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
+</script>
+
+</body>
+</html>
